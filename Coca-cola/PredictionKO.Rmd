@@ -1,0 +1,136 @@
+
+Objetivo: aplicar un modelo de machine learning para predecir el precio de cierre de la accion de Coca-cola company que cotiza en Wall Street.
+
+Observacion: los datos son reales, los resultados del estudio son con fines academicos no es recomendación de inversión. 
+
+********************
+Creación del dataset
+********************
+
+```{r}
+#Librerias
+library(tidyquant)
+library(plotly)
+library(caret)
+
+#Definicion del ticker a estudiar - Ejemplo Coca-cola company KO 
+ticker = 'KO'
+
+#Busqueda de los datos historicos de precios de la accion
+df = tq_get(ticker, get = "stock.prices", from="2010-01-01")
+df = na.omit(df)
+```
+
+Descripcion del dataset: 
+------------------------
+symbol = Nombre del ticker
+date   = Fecha de operacion
+open   = Cotizacion a la apertura
+high   = Cotizacion maxima durante el día operado
+low    = Cotizacion minima durante el día operado
+close  = Cotizacion al cierre del día 
+volume = Volumen operado
+adjust = Ajuste del precio al finalizar la operatoria
+
+
+```{r}
+#Se puede predecir el precio de Cierre de una accion?
+```
+
+Veamos los movimientos del año corriente 
+```{r}
+fig <- df[df$date>"2020-01-01",] %>% plot_ly(x = ~date, type="candlestick",
+          open = ~open, close = ~close,
+          high = ~high, low = ~low) 
+fig <- fig %>% layout(title = "Cotizacion de KO")
+
+fig
+
+
+```
+
+Distribucion del Volumen operado
+```{r}
+
+#volumen
+fig <- df[df$date>"2020-01-01",] %>%plot_ly(alpha = 0.6)
+fig <- fig %>% add_histogram(x = ~df$volume)
+#fig <- fig %>% add_histogram(x = ~df$close)
+fig <- fig %>% layout(barmode = "overlay")
+
+fig
+
+
+
+```
+
+
+Visualizando la cotizacion de Cierre
+```{r}
+
+#Cotizacion de cierre
+fig <- plot_ly(data = df[df$date>"2020-01-01",], x = ~date, y = ~close,
+               marker = list(size = 10,
+                             color = 'rgba(255, 182, 193, .9)',
+                             line = list(color = 'rgba(152, 0, 0, .8)',
+                                         width = 2)))
+fig <- fig %>% layout(title = 'Cotizacion de Cierre',
+         yaxis = list(zeroline = TRUE),
+         xaxis = list(zeroline = TRUE))
+
+fig
+
+
+```
+*********************
+Preprocesado de datos
+*********************
+
+Excluiremos del analisis las variables: symbol y adjust (este dato se obtiene cuando finaliza el día)
+
+```{r}
+#PREPROCESADO DE DATOS 
+df$symbol = NULL
+df$adjusted = NULL
+```
+
+Division del dataset en Train y Test
+```{r}
+#Vamos a predecir los 100 ultimos dias diviendo el dataset de la siguiente forma
+trainIndex = seq_len(nrow(df)-100)
+
+train = df[trainIndex,]
+test = df[-trainIndex,]
+```
+
+Entrenamiento del modelo y prediccion 
+```{r}
+#Utilizaremos una regresion lineal 
+modelo = lm(close ~ . , train) 
+
+#Prediccion de 100 dias 
+pred = predict(modelo, test)
+test$close_predicho = pred
+
+#Evaluacion del modelo 
+RMSE(test$close_predicho, test$close)
+
+
+```
+
+Visualizacion de la prediccion obtenida
+```{r}
+
+#Visualizacion de prediccion
+
+fig <- plot_ly(test, x = ~date)
+fig <- fig %>% add_lines(y = ~close, name = 'Cotizacion de cierre real',mode = 'lines')
+fig <- fig %>% add_lines(y = ~close_predicho, name = 'Cotizacion Predicha', mode = 'lines+marker')
+
+
+
+fig
+
+
+```
+

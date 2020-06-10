@@ -1,0 +1,374 @@
+Inclusion financiera en latinoamerica 
+
+```{r}
+library(ggplot2)
+
+#Importo datasets 
+data = read.csv("Train.csv")
+
+
+```
+
+Visualizacion univariada
+```{r}
+
+#distribucion del target 
+prop.table(table(data$bank_account))
+
+qplot(x = data$bank_account )
+
+#Distribucion pais 
+qplot(x = country, data = data)
+
+#Distribucion year
+qplot(x = year, data = data)
+
+#Distribucion location type
+qplot(x = location_type, data = data)
+
+qplot(x = cellphone_access, data = data)
+
+#outliers 
+ggplot(data, mapping= aes(x=household_size)) + 
+  geom_boxplot()
+
+#age of respondent 
+ggplot(data, mapping= aes(x=age_of_respondent)) + 
+  geom_boxplot()
+
+#gender of respondent 
+ggplot(data, mapping= aes(x=gender_of_respondent)) +
+  geom_bar()
+
+#relationship with head 
+ggplot(data, mapping= aes(x=relationship_with_head)) + 
+  geom_bar()
+
+#marital status
+ggplot(data, mapping= aes(x=marital_status)) + 
+  geom_bar()
+
+# education level 
+ggplot(data, mapping= aes(x=education_level)) + 
+  geom_bar()
+
+# job type
+ggplot(data, mapping= aes(x=job_type)) + 
+  geom_bar()
+```
+
+
+PREPROCESADO
+
+```{r}
+
+#Outliers house hold size 
+data$household_size = ifelse(data$household_size>10, 10, data$household_size)
+
+
+#Rango de edades 
+data$age_of_respondent = as.factor(ifelse( data$age_of_respondent < 20, "0-20",
+        ifelse( data$age_of_respondent < 25, "20-25",
+                ifelse(data$age_of_respondent < 35, "25-35",
+                       ifelse(data$age_of_respondent <45, "35-45",
+                              ifelse(data$age_of_respondent <55, "45-55",
+                                     ifelse(data$age_of_respondent < 65, "55-65",
+                                            ifelse(data$age_of_respondent < 75, "65-75",
+                                                   "75+"))))))))
+
+#Education level 
+data$education_level = as.factor(ifelse(data$education_level == "Other/Dont know/RTA", "No formal education", data$education_level))
+
+
+```
+
+
+MODELADO Arbol de decision
+```{r}
+library(rpart)
+library(rpart.plot)
+
+set.seed(1234)
+
+y <- "bank_account ~ "
+x <- "country + year + location_type + cellphone_access + household_size + age_of_respondent + relationship_with_head + marital_status + education_level + job_type"
+fmla = paste(y , x)
+
+tree_model = rpart( fmla , data = data, method = "class")
+rpart.plot(tree_model , fallen.leaves = F , type = 2)
+
+pred_tree = predict(tree_model, data= data, type = "class")
+
+#Matriz de confusion 
+confusion <- as.matrix(table(data$bank_account,pred_tree))[c(2,1),c(2,1)]
+confusion
+
+
+#Calcular Accuracy $\frac{VP+VN}{TOTAL}$ -> 0.88 acc
+sum(data$bank_account==pred_tree)/nrow(data)
+
+
+```
+
+Modelado Random forest
+```{r}
+library(randomForest)
+set.seed(1234)
+
+rf = data
+rf$uniqueid <- NULL
+
+rf_model = randomForest(bank_account ~ ., data = rf, mtry=5)
+rf_model
+
+rf_pred = predict(rf_model, rf, type = "class")
+
+rf$pred = rf_pred
+rf$pred_class = rf_pred
+
+confusion <- as.matrix(table(rf$bank_account,rf$pred_class))[c(2,1),c(2,1)]
+confusion
+
+#Calcular Accuracy $\frac{VP+VN}{TOTAL}$  
+sum(rf$pred_class==rf$bank_account)/nrow(rf)
+
+
+#mtry 5 acc 0.94
+
+```
+
+EVALUACION EN TEST CON TREE MODEL 
+
+```{r}
+test = read.csv("Test.csv")
+
+
+#Outliers house hold size 
+test$household_size = ifelse(test$household_size>10, 10, test$household_size)
+
+
+#Rango de edades 
+test$age_of_respondent = as.factor(ifelse( test$age_of_respondent < 20, "0 -20",
+        ifelse( test$age_of_respondent < 25, "20 -25",
+                ifelse(test$age_of_respondent < 35, "25 -35",
+                       ifelse(test$age_of_respondent <45, "35 - 45",
+                              ifelse(test$age_of_respondent <55, "45 - 55",
+                                     ifelse(test$age_of_respondent < 65, "55 -65",
+                                            ifelse(test$age_of_respondent < 75, "65 -75",
+                                                   "75+"))))))))
+
+#Education level 
+test$education_level = as.factor(ifelse(test$education_level == "Other/Dont know/RTA", "No formal education", test$education_level))
+
+
+#EVALUACION DEL MODELO 
+
+test$pred = predict(tree_model, test , type = "class")
+
+
+#EXPORT DEL ARCHIVO 
+
+#salida 
+exit_df = data.frame(uniqueid = paste(paste(test$uniqueid, "x"), test$country) )
+exit_df$bank_account = ifelse(test$pred=="Yes",1,0)
+
+write.csv(exit_df , "submission_tree.csv", quote = F , row.names = F)
+
+
+```
+
+EVALUACION CON RANDOM FOREST 
+```{r}
+test = read.csv("Test.csv")
+
+
+#Outliers house hold size 
+test$household_size = ifelse(test$household_size>10, 10, test$household_size)
+
+
+#Rango de edades 
+test$age_of_respondent = as.factor(ifelse( test$age_of_respondent < 20, "0 -20",
+        ifelse( test$age_of_respondent < 25, "20 -25",
+                ifelse(test$age_of_respondent < 35, "25 -35",
+                       ifelse(test$age_of_respondent <45, "35 - 45",
+                              ifelse(test$age_of_respondent <55, "45 - 55",
+                                     ifelse(test$age_of_respondent < 65, "55 -65",
+                                            ifelse(test$age_of_respondent < 75, "65 -75",
+                                                   "75+"))))))))
+
+#Education level 
+test$education_level = as.factor(ifelse(test$education_level == "Other/Dont know/RTA", "No formal education", test$education_level))
+
+
+#EVALUACION DEL MODELO 
+
+test$pred = predict(rf_model, test , type = "class")
+
+
+#EXPORT DEL ARCHIVO 
+
+#salida 
+exit_df = data.frame(uniqueid = paste(paste(test$uniqueid, "x"), test$country) )
+exit_df$bank_account = ifelse(test$pred=="Yes",1,0)
+
+write.csv(exit_df , "submission_rf.csv", quote = F , row.names = F)
+
+```
+
+MODELADO EN XGBOOST 
+
+```{r}
+#PREPARADO DE LA DATA 
+train = data 
+train$uniqueid = NULL
+
+
+train$country = as.numeric(factor(train$country, 
+                  levels = c("Argentina","Chile","Colombia","Mexico"),
+                  labels = c(1,2,3,4)))
+
+train$location_type = as.numeric(factor(train$location_type, 
+                  levels = c("Rural","Urban"),
+                  labels = c(1,2)))
+
+train$cellphone_access = ifelse(train$cellphone_access == "Yes",1,0)
+
+train$age_of_respondent = as.numeric(factor(train$age_of_respondent, 
+                  levels = c("0-20","20-25","25-35","35-45","45-55","55-65","65-75","75+"),
+                  labels = c(1,2,3,4,5,6,7,8)))
+
+train$gender_of_respondent = ifelse(train$gender_of_respondent == "Female", 0, 1)
+
+train$relationship_with_head = as.numeric(factor(train$relationship_with_head, 
+                  levels = c("Child","Head of Household","Married/Living together","Single/Never Married","Widowed"),
+                  labels = c(1,2,3,4,5)))
+
+train$marital_status = as.numeric(factor(train$marital_status, 
+                  levels = c("Divorced/Seperated","Dont know","Other non-relatives","Other relative","Parent","Spouse"),
+                  labels = c(1,2,3,4,5,6)))
+
+train$education_level = as.numeric(train$education_level)
+
+train$marital_status = as.numeric(factor(train$marital_status, 
+                  levels = c("Divorced/Seperated","Dont know","Other non-relatives","Other relative","Parent","Spouse"),
+                  labels = c(1,2,3,4,5,6)))
+
+train$job_type = as.numeric(factor(train$job_type, 
+                  levels = c("Dont Know/Refuse to answer","Farming and Fishing","Formally employed Government","Formally employed Private","Government Dependent","Informally employed","No Income","Other Income","Remittance Dependent","Self employed"),
+                  labels = c(1,2,3,4,5,6,7,8,9,10)))
+
+train$bank_account = ifelse(train$bank_account == "Yes", 1, 0)
+
+library(xgboost)
+set.seed(1234)
+
+xgb = xgboost(data = as.matrix(train[,-3]),
+              label = train$bank_account,
+              nrounds = 300)
+
+pred = predict(xgb,as.matrix(train[,-3]) )
+
+#evaluacion 
+
+pred <- ifelse(pred>0.5, 1, 0 )
+
+confusion <- as.matrix(table(train$bank_account,pred))[c(2,1),c(2,1)]
+confusion
+
+#Calcular Accuracy $\frac{VP+VN}{TOTAL}$  
+sum(pred==train$bank_account)/nrow(train)
+
+
+#mtry 5 acc 0.939
+
+
+```
+
+EVALUANDO EN TEST XGBOOST 
+
+```{r}
+test = read.csv("Test.csv")
+
+
+#Outliers house hold size 
+test$household_size = ifelse(test$household_size>10, 10, test$household_size)
+
+
+#Rango de edades 
+test$age_of_respondent = as.factor(ifelse( test$age_of_respondent < 20, "0-20",
+        ifelse( test$age_of_respondent < 25, "20-25",
+                ifelse(test$age_of_respondent < 35, "25-35",
+                       ifelse(test$age_of_respondent <45, "35-45",
+                              ifelse(test$age_of_respondent <55, "45-55",
+                                     ifelse(test$age_of_respondent < 65, "55-65",
+                                            ifelse(test$age_of_respondent < 75, "65-75",
+                                                   "75+"))))))))
+
+#Education level 
+test$education_level = as.factor(ifelse(test$education_level == "Other/Dont know/RTA", "No formal education", test$education_level))
+
+
+
+```
+
+#PREPARACION DE DATOS PARA XGBOOST
+
+```{r}
+id = test$uniqueid
+test$uniqueid = NULL
+
+
+test$country = as.numeric(factor(test$country, 
+                  levels = c("Argentina","Chile","Colombia","Mexico"),
+                  labels = c(1,2,3,4)))
+
+test$location_type = as.numeric(factor(test$location_type, 
+                  levels = c("Rural","Urban"),
+                  labels = c(1,2)))
+
+test$cellphone_access = ifelse(test$cellphone_access == "Yes",1,0)
+
+test$age_of_respondent = as.numeric(factor(test$age_of_respondent, 
+                  levels = c("0-20","20-25","25-35","35-45","45-55","55-65","65-75","75+"),
+                  labels = c(1,2,3,4,5,6,7,8)))
+
+test$gender_of_respondent = ifelse(test$gender_of_respondent == "Female", 0, 1)
+
+test$relationship_with_head = as.numeric(factor(test$relationship_with_head, 
+                  levels = c("Child","Head of Household","Married/Living together","Single/Never Married","Widowed"),
+                  labels = c(1,2,3,4,5)))
+
+test$marital_status = as.numeric(factor(test$marital_status, 
+                  levels = c("Divorced/Seperated","Dont know","Other non-relatives","Other relative","Parent","Spouse"),
+                  labels = c(1,2,3,4,5,6)))
+
+test$education_level = as.numeric(test$education_level)
+
+test$marital_status = as.numeric(factor(test$marital_status, 
+                  levels = c("Divorced/Seperated","Dont know","Other non-relatives","Other relative","Parent","Spouse"),
+                  labels = c(1,2,3,4,5,6)))
+
+test$job_type = as.numeric(factor(test$job_type, 
+                  levels = c("Dont Know/Refuse to answer","Farming and Fishing","Formally employed Government","Formally employed Private","Government Dependent","Informally employed","No Income","Other Income","Remittance Dependent","Self employed"),
+                  labels = c(1,2,3,4,5,6,7,8,9,10)))
+```
+
+#PREDICCION DEL MODELO 
+
+```{r}
+pred_Test = predict(xgb,as.matrix(test) )
+
+#evaluacion 
+pred_Test <- ifelse(pred_Test>0.5, 1, 0 )
+
+
+
+#EXPORT DEL ARCHIVO 
+
+#salida 
+exit_df = data.frame(uniqueid = paste(paste(id, "x"), test$country) )
+exit_df$bank_account = pred_Test
+write.csv(exit_df , "submission_xgb5.csv", quote = F , row.names = F)
+
+```
+

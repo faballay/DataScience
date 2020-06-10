@@ -1,3 +1,8 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
 
 Objetivo: aplicar un modelo de machine learning para predecir el precio de cierre de la accion de Coca-cola company que cotiza en Wall Street.
 

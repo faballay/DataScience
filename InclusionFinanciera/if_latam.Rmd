@@ -1,4 +1,4 @@
-Inclusion financiera en latinoamerica 
+#Inclusion financiera en latinoamerica 
 
 ```{r}
 library(ggplot2)
@@ -9,7 +9,7 @@ data = read.csv("Train.csv")
 
 ```
 
-Visualizacion univariada
+#Visualizacion univariada
 ```{r}
 
 #distribucion del target 
@@ -58,7 +58,7 @@ ggplot(data, mapping= aes(x=job_type)) +
 ```
 
 
-PREPROCESADO
+#PREPROCESADO
 
 ```{r}
 
@@ -83,7 +83,7 @@ data$education_level = as.factor(ifelse(data$education_level == "Other/Dont know
 ```
 
 
-MODELADO Arbol de decision
+#MODELADO Arbol de decision
 ```{r}
 library(rpart)
 library(rpart.plot)
@@ -110,7 +110,7 @@ sum(data$bank_account==pred_tree)/nrow(data)
 
 ```
 
-Modelado Random forest
+#Modelado Random forest
 ```{r}
 library(randomForest)
 set.seed(1234)
@@ -137,7 +137,7 @@ sum(rf$pred_class==rf$bank_account)/nrow(rf)
 
 ```
 
-EVALUACION EN TEST CON TREE MODEL 
+#EVALUACION EN TEST CON TREE MODEL 
 
 ```{r}
 test = read.csv("Test.csv")
@@ -177,7 +177,7 @@ write.csv(exit_df , "submission_tree.csv", quote = F , row.names = F)
 
 ```
 
-EVALUACION CON RANDOM FOREST 
+#EVALUACION CON RANDOM FOREST 
 ```{r}
 test = read.csv("Test.csv")
 
@@ -215,7 +215,7 @@ write.csv(exit_df , "submission_rf.csv", quote = F , row.names = F)
 
 ```
 
-MODELADO EN XGBOOST 
+#MODELADO EN XGBOOST 
 
 ```{r}
 #PREPARADO DE LA DATA 
@@ -284,7 +284,7 @@ sum(pred==train$bank_account)/nrow(train)
 
 ```
 
-EVALUANDO EN TEST XGBOOST 
+#EVALUANDO EN TEST XGBOOST 
 
 ```{r}
 test = read.csv("Test.csv")

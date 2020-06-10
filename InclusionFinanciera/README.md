@@ -3,6 +3,8 @@ Participacion en la competencia : Inclusión Financiera en Latinoamérica
 https://www.datasource.ai/es/home/competitions/inclusion-financiera-en-latinoamerica
 
 
+![Puntuacion](https://github.com/faballay/DataScience/blob/master/InclusionFinanciera/Captura.png)
+
 
 Descripción
 La inclusión financiera sigue siendo uno de los principales obstáculos para el desarrollo económico y humano de Latinoamérica. Por ejemplo, en Argentica, Chile, Colombia y México sólo 9,1 millones de adultos (o el 13,9% de la población adulta) tienen acceso a una cuenta bancaria comercial o la utilizan.

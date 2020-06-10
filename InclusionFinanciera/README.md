@@ -2,8 +2,8 @@ Participacion en la competencia : Inclusión Financiera en Latinoamérica
 
 https://www.datasource.ai/es/home/competitions/inclusion-financiera-en-latinoamerica
 
-
-![Puntuacion](https://github.com/faballay/DataScience/blob/master/InclusionFinanciera/Captura.png)
+Puntuacion Obtenida utilzando XGBOOST 
+![Puntuacion](https://github.com/faballay/DataScience/blob/master/InclusionFinanciera/Captura.PNG)
 
 
 Descripción
